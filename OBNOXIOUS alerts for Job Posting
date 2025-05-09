@@ -1,0 +1,137 @@
+// ==UserScript==
+// @name         OBNOXIOUS Job Alert Pinger
+// @namespace    http://tampermonkey.net/
+// @version      2.1
+// @description  Annoys you endlessly for jobs with fewer than 100 applicants
+// @author       Your Name
+// @match        https://www.linkedin.com/jobs/*
+// @match        https://www.indeed.com/*
+// @grant        GM_notification
+// @grant        GM_openInTab
+// @grant        GM_addStyle
+// @run-at       document-idle
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Minimal test to verify the script runs.
+    alert("Test: OBNOXIOUS Job Alert Pinger Loaded!");
+    console.log("Script loaded: OBNOXIOUS Job Alert Pinger Loaded!");
+
+    // [Optional] Override console.error to suppress WebGL warnings (commented out for now)
+//    const originalConsoleError = console.error;
+//    console.error = function(...args) {
+//        if (args[0] && typeof args[0] === 'string' && args[0].includes('fallback to software WebGL')) {
+//            return;
+//        }
+//        originalConsoleError.apply(console, args);
+//    };
+
+    function playAnnoyingSound() {
+        try {
+            let audio = new Audio('https://www.soundjay.com/button/beep-07.mp3'); // Example beep sound
+            audio.play();
+        } catch (err) {
+            console.error("Error playing audio:", err);
+        }
+    }
+
+    function flashScreen() {
+        // Flash the screen red then revert to white.
+        GM_addStyle(`
+            body { background-color: red !important; transition: background-color 0.1s ease-in-out; }
+        `);
+        setTimeout(() => {
+            GM_addStyle(`body { background-color: white !important; }`);
+        }, 100);
+    }
+
+    function popupAlert(jobTitle) {
+        alert(`🚨🚨 ATTENTION! 🚨🚨\n\n"${jobTitle}" has fewer than 100 applicants! Apply NOW before it's too late!`);
+    }
+
+    function checkLinkedInJobs() {
+        // Try to find LinkedIn job listings using a common selector.
+        let jobListings = document.querySelectorAll('.base-card');
+        console.log("LinkedIn listings found:", jobListings.length);
+
+        jobListings.forEach(job => {
+            let applicantCountElement = job.querySelector('.applicant-badge__count');
+            if (applicantCountElement) {
+                let applicantCount = parseInt(applicantCountElement.innerText.replace(/\D/g, ''), 10);
+                if (applicantCount < 100) {
+                    let jobTitle = job.querySelector('.base-card__full-link')?.innerText || 'Job Alert';
+                    playAnnoyingSound();
+                    flashScreen();
+                    popupAlert(jobTitle);
+                    GM_notification({
+                        title: '🚨 OBNOXIOUS LINKEDIN JOB ALERT! 🚨',
+                        text: `${jobTitle} has fewer than 100 applicants!`,
+                        timeout: 10000
+                    });
+                }
+            }
+        });
+    }
+
+    function checkIndeedJobs() {
+        // Try to find Indeed job listings using a common selector.
+        let jobListings = document.querySelectorAll('.job_seen_beacon');
+        console.log("Indeed listings found:", jobListings.length);
+
+        jobListings.forEach(job => {
+            let applicantCountElement = job.querySelector('.sjcl');
+            if (applicantCountElement) {
+                let applicantCountText = applicantCountElement.innerText.match(/\d+/);
+                let applicantCount = applicantCountText ? parseInt(applicantCountText[0], 10) : 0;
+                if (applicantCount < 100) {
+                    let jobTitle = job.querySelector('h2')?.innerText || 'Job Alert';
+                    playAnnoyingSound();
+                    flashScreen();
+                    popupAlert(jobTitle);
+                    GM_notification({
+                        title: '🚨 OBNOXIOUS INDEED JOB ALERT! 🚨',
+                        text: `${jobTitle} has fewer than 100 applicants!`,
+                        timeout: 10000
+                    });
+                }
+            }
+        });
+    }
+
+    function checkJobs() {
+        console.log("Checking jobs on", window.location.hostname);
+        if (window.location.hostname.includes("linkedin.com")) {
+            checkLinkedInJobs();
+        } else if (window.location.hostname.includes("indeed.com")) {
+            checkIndeedJobs();
+        }
+    }
+
+    // Do an initial job check immediately.
+    checkJobs();
+
+    // Set repeated interval checks every 90 seconds.
+    setInterval(checkJobs, 90000);
+
+    // Use a MutationObserver to catch dynamic content changes (common in SPAs).
+    const observer = new MutationObserver(mutationsList => {
+        mutationsList.forEach(mutation => {
+            if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach(node => {
+                    if (
+                        node.nodeType === Node.ELEMENT_NODE &&
+                        (node.matches('.base-card, .job_seen_beacon') ||
+                         node.querySelector('.base-card, .job_seen_beacon'))
+                    ) {
+                        console.log("Dynamic job listing detected; running job check.");
+                        checkJobs();
+                    }
+                });
+            }
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+})();
