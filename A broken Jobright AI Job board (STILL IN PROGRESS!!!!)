@@ -16,7 +16,7 @@
     "use strict";
 
     // Confirm that the script is running.
-    alert("Tampermonkey script is running! ✅");
+    alert("Tampermonkey script is running! ");
     console.log("Initializing script without eval issues...");
 
     // Ensure XLSX and FileSaver's saveAs function are available.
@@ -94,7 +94,7 @@
             const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
             const blob = new Blob([wbout], { type: "application/octet-stream" });
             saveAs(blob, "Job_Qualification_Rankings.xlsx");
-            console.log("Excel file created successfully without triggering eval! ✅");
+            console.log("Excel file created successfully without triggering eval! ");
         } catch (error) {
             console.error("Excel file creation failed:", error);
         } finally {
@@ -108,7 +108,7 @@
     function alertTopJob(jobs) {
         if (jobs.length > 0) {
             GM_notification({
-                title: "Top Matching Job Found! 🚀",
+                title: "Top Matching Job Found! ",
                 text: `Most Qualified: ${jobs[0].title} at ${jobs[0].company} (${jobs[0].percentage}%)`,
                 timeout: 5000
             });
