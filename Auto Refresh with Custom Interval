@@ -1,0 +1,54 @@
+// ==UserScript==
+// @name         Auto Refresh with Custom Interval
+// @namespace    http://tampermonkey.net/
+// @version      1.1
+// @description  Automatically refresh the webpage with an option to change the interval.
+// @author       Athena
+// @match        *://*/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    let refreshTime = 5 * 60 * 1000; // Default: 5 minutes
+
+    function autoRefresh() {
+        setTimeout(() => {
+            location.reload();
+        }, refreshTime);
+    }
+
+    function changeRefreshTime() {
+        let newTime = prompt("Enter refresh time in minutes:");
+        if (newTime && !isNaN(newTime) && newTime > 0) {
+            refreshTime = newTime * 60 * 1000;
+            alert(`Page will now refresh every ${newTime} minutes.`);
+            autoRefresh();
+        } else {
+            alert("Invalid input. Please enter a positive number.");
+        }
+    }
+
+    function createButton() {
+        let refreshBtn = document.createElement("button");
+        refreshBtn.innerHTML = "Change Refresh Interval";
+        refreshBtn.style.position = "fixed";
+        refreshBtn.style.bottom = "10px";
+        refreshBtn.style.right = "10px";
+        refreshBtn.style.zIndex = "1000";
+        refreshBtn.style.padding = "10px";
+        refreshBtn.style.background = "#0078D7";
+        refreshBtn.style.color = "#fff";
+        refreshBtn.style.border = "none";
+        refreshBtn.style.cursor = "pointer";
+
+        refreshBtn.onclick = changeRefreshTime;
+        document.body.appendChild(refreshBtn);
+    }
+
+    // Wait for page to load before creating the button
+    window.addEventListener('load', createButton);
+
+    autoRefresh();
+})();
