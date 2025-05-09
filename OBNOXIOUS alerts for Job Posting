@@ -48,7 +48,7 @@
     }
 
     function popupAlert(jobTitle) {
-        alert(`🚨🚨 ATTENTION! 🚨🚨\n\n"${jobTitle}" has fewer than 100 applicants! Apply NOW before it's too late!`);
+        alert(` ATTENTION! \n\n"${jobTitle}" has fewer than 100 applicants! Apply NOW before it's too late!`);
     }
 
     function checkLinkedInJobs() {
@@ -66,7 +66,7 @@
                     flashScreen();
                     popupAlert(jobTitle);
                     GM_notification({
-                        title: '🚨 OBNOXIOUS LINKEDIN JOB ALERT! 🚨',
+                        title: ' OBNOXIOUS LINKEDIN JOB ALERT! ',
                         text: `${jobTitle} has fewer than 100 applicants!`,
                         timeout: 10000
                     });
@@ -91,7 +91,7 @@
                     flashScreen();
                     popupAlert(jobTitle);
                     GM_notification({
-                        title: '🚨 OBNOXIOUS INDEED JOB ALERT! 🚨',
+                        title: ' OBNOXIOUS INDEED JOB ALERT! ',
                         text: `${jobTitle} has fewer than 100 applicants!`,
                         timeout: 10000
                     });
