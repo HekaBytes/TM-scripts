@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      2.1
 // @description  Annoys you endlessly for jobs with fewer than 100 applicants
-// @author       Your Name
+// @author       Athena
 // @match        https://www.linkedin.com/jobs/*
 // @match        https://www.indeed.com/*
 // @grant        GM_notification
