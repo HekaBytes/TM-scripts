@@ -1,0 +1,132 @@
+// ==UserScript==
+// @name         Jobright.AI Job Qualification Tracker
+// @namespace    http://tampermonkey.net/
+// @version      1.7-safe
+// @description  Scans job postings on Jobright.AI, ranks qualifications, and exports to Excel without eval issues.
+// @author       Athena
+// @match        https://www.jobright.ai/*
+// @grant        GM_notification
+// @grant        GM_addStyle
+// @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js
+// @run-at       document-idle
+// ==/UserScript==
+
+(function () {
+    "use strict";
+
+    // Confirm that the script is running.
+    alert("Tampermonkey script is running! ✅");
+    console.log("Initializing script without eval issues...");
+
+    // Ensure XLSX and FileSaver's saveAs function are available.
+    if (typeof XLSX === "undefined") {
+        console.error("XLSX is not available!");
+        return;
+    }
+    if (typeof saveAs === "undefined") {
+        console.error("FileSaver (saveAs) is not available!");
+        return;
+    }
+    console.log("XLSX and FileSaver loaded successfully!");
+
+    // User's qualifications stored in a Set for efficient lookup.
+    const userSkills = new Set([
+        "AWS Lambda", "EC2", "S3", "CloudFront", "API Gateway", "Docker", "Kubernetes",
+        "Terraform", "Python", "React.js", "CI/CD", "Networking", "Linux"
+    ]);
+
+    // Function to collect job postings from the page.
+    function getJobListings() {
+        const jobs = [];
+        const jobCards = document.querySelectorAll(".job-card");
+
+        if (jobCards.length === 0) {
+            console.warn("No job listings found!");
+            return [];
+        }
+
+        jobCards.forEach(job => {
+            const title = job.querySelector(".job-title")?.innerText.trim() || "Unknown";
+            const company = job.querySelector(".company-name")?.innerText.trim() || "Unknown";
+            const description = job.querySelector(".job-description")?.innerText.trim() || "";
+
+            const matchCount = [...userSkills].filter(skill => description.includes(skill)).length;
+            const percentage = Math.round((matchCount / userSkills.size) * 100);
+
+            jobs.push({ title, company, percentage });
+        });
+
+        console.log(`Total jobs found: ${jobs.length}`);
+        return jobs.sort((a, b) => b.percentage - a.percentage);
+    }
+
+    // A safe version of the createExcel function that temporarily overrides eval.
+    function safeCreateExcel(jobs) {
+        if (!jobs.length) {
+            console.warn("No job data available for export.");
+            return;
+        }
+
+        // Save original eval.
+        const originalEval = window.eval;
+        // Override eval with a safe dummy function.
+        window.eval = function () {
+            console.warn("Blocked call to eval:", arguments);
+            // Optionally, you could throw an error or simply return undefined.
+            return undefined;
+        };
+
+        try {
+            // Create worksheet and workbook.
+            const ws = XLSX.utils.json_to_sheet(
+                jobs.map(job => ({
+                    "Job Title": job.title,
+                    "Company": job.company,
+                    "Qualification %": job.percentage,
+                    "Status": "Applied | Denied | Received Offer | Accepted"
+                }))
+            );
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Job Rankings");
+
+            // Write the workbook to an array (thus avoiding reliance on eval-based writer functions).
+            const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+            const blob = new Blob([wbout], { type: "application/octet-stream" });
+            saveAs(blob, "Job_Qualification_Rankings.xlsx");
+            console.log("Excel file created successfully without triggering eval! ✅");
+        } catch (error) {
+            console.error("Excel file creation failed:", error);
+        } finally {
+            // Restore original eval regardless of success or failure.
+            window.eval = originalEval;
+            console.log("Restored original eval function.");
+        }
+    }
+
+    // Function to display a notification for the top matching job.
+    function alertTopJob(jobs) {
+        if (jobs.length > 0) {
+            GM_notification({
+                title: "Top Matching Job Found! 🚀",
+                text: `Most Qualified: ${jobs[0].title} at ${jobs[0].company} (${jobs[0].percentage}%)`,
+                timeout: 5000
+            });
+            console.log(`Notification sent for: ${jobs[0].title}`);
+        } else {
+            console.warn("No matching jobs found for notification");
+        }
+    }
+
+    // Main function to run the job scan.
+    function startJobScan() {
+        console.log("Executing job scan...");
+        const jobList = getJobListings();
+        alertTopJob(jobList);
+        safeCreateExcel(jobList);
+    }
+
+    // Run the job scan immediately.
+    startJobScan();
+
+})();
